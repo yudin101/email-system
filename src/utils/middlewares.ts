@@ -8,3 +8,12 @@ export const loggingMiddleware = (
   console.log(`${req.method} - ${req.url}`);
   next();
 };
+
+export const checkLogin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    res.sendStatus(401);
+    return;
+  }
+
+  next();
+};

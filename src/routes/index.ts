@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { checkLogin } from "../utils/middlewares";
 import register from "./register";
 import login from "./login";
 import logout from "./logout";
@@ -9,8 +10,8 @@ const router = Router();
 
 router.use(register);
 router.use(login);
-router.use(logout);
-router.use(send);
-router.use(mails);
+router.use(checkLogin, logout);
+router.use(checkLogin, send);
+router.use(checkLogin, mails);
 
 export default router;

@@ -19,12 +19,14 @@ db.exec(`
 );
   CREATE TABLE IF NOT EXISTS  mails (
     id INTEGER,
+    is_reply_to INTEGER,
     sender_id INTEGER,
     receiver_id INTEGER,
     subject TEXT,
     body TEXT NOT NULL,
     time NUMERIC DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY(id),
+    FOREIGN KEY (is_reply_to) REFERENCES mails (id),
     FOREIGN KEY (sender_id) REFERENCES users (id),
     FOREIGN KEY (receiver_id) REFERENCES users (id)
 );

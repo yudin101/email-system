@@ -20,10 +20,30 @@ router.post(
     const { username, email, password } = matchedData(req);
 
     try {
-      const stmt = db.prepare(
+      const checkEmailStmt = db.prepare(
+        "SELECT email FROM users WHERE email = ?",
+      );
+      const emailExists = checkEmailStmt.get(email);
+
+      if (emailExists) {
+        res.status(400).send({ error: "Email already exists!" });
+        return;
+      }
+
+      const checkUserStmt = db.prepare(
+        "SELECT username FROM users WHERE username = ?",
+      );
+      const userExists = checkUserStmt.get(username);
+
+      if (userExists) {
+        res.status(400).send({ error: "Username already exists!" });
+        return;
+      }
+
+      const insertStmt = db.prepare(
         "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
       );
-      stmt.run(username, email, hashPassword(password));
+      insertStmt.run(username, email, hashPassword(password));
 
       res.sendStatus(201);
       return;
