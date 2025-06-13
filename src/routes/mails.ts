@@ -1,5 +1,7 @@
 import { Request, Response, Router } from "express";
 import db from "../db";
+import { decrypt } from "../utils/helpers";
+import { Mail } from "../types/mail";
 
 const router = Router();
 
@@ -10,7 +12,7 @@ const handleMails = (req: Request, res: Response, senderReceiverId: string) => {
     const stmt = db.prepare(`
       SELECT 
         mails.id,
-        mails.is_reply_to,
+        mails.is_reply_to AS isReplyTo,
         sender.email AS senderEmail,
         receiver.email AS receiverEmail,
         mails.subject, 
@@ -22,9 +24,26 @@ const handleMails = (req: Request, res: Response, senderReceiverId: string) => {
       WHERE mails.${senderReceiverId} = ?
     `);
 
-    const mails = stmt.all(receiverId);
+    const mails = stmt.all(receiverId) as Mail[];
 
-    res.status(200).send(mails);
+    const decryptedMails = mails.map((mail: Mail) => {
+      try {
+        const decryptedSubject = decrypt(mail.subject);
+        const decryptedBody = decrypt(mail.body);
+
+        return {
+          ...mail,
+          subject: decryptedSubject,
+          body: decryptedBody,
+        } as Mail;
+      } catch (err) {
+        console.log(err);
+        res.sendStatus(500);
+        return;
+      }
+    });
+
+    res.status(200).send(decryptedMails);
     return;
   } catch (err) {
     res.sendStatus(500);
@@ -49,7 +68,7 @@ router.get("/mail/:id", (req: Request, res: Response) => {
     const stmt = db.prepare(`
       SELECT 
         mails.id,
-        mails.is_reply_to,
+        mails.is_reply_to AS isReplyTo,
         sender.email AS senderEmail,
         receiver.email AS receiverEmail,
         mails.subject, 
@@ -60,9 +79,18 @@ router.get("/mail/:id", (req: Request, res: Response) => {
       JOIN users AS receiver ON mails.receiver_id = receiver.id
       WHERE mails.id = ? AND (receiver_id = ? OR sender_id = ?)
     `);
-    const requestedMail = stmt.get(mailId, userId, userId);
+    const requestedMail = stmt.get(mailId, userId, userId) as Mail;
 
-    res.status(200).send(requestedMail);
+    const decryptedSubject = decrypt(requestedMail.subject);
+    const decryptedBody = decrypt(requestedMail.body);
+
+    const decryptedRequestedMail = {
+      ...requestedMail,
+      subject: decryptedSubject,
+      body: decryptedBody,
+    };
+
+    res.status(200).send(decryptedRequestedMail);
     return;
   } catch (err) {
     res.sendStatus(500);

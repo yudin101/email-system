@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import { checkSchema, matchedData, validationResult } from "express-validator";
 import { sendValidation } from "../utils/validationSchema";
 import db from "../db";
+import { encrypt } from "../utils/helpers";
 
 const router = Router();
 router.post(
@@ -19,6 +20,9 @@ router.post(
     const { id: senderId, email: senderEmail } = req.user!;
 
     try {
+      const encrypted_subject = encrypt(subject);
+      const encrypted_body = encrypt(body);
+
       if (senderEmail === receiverEmail) {
         res.status(400).send({ error: "Cannot mail yourself!" });
         return;
@@ -60,7 +64,13 @@ router.post(
         "INSERT INTO mails (is_reply_to, sender_id, receiver_id, subject, body) VALUES (?, ?, ?, ?, ?)",
       );
 
-      insertStmt.run(parentId, senderId, receiverId, subject, body);
+      insertStmt.run(
+        parentId,
+        senderId,
+        receiverId,
+        encrypted_subject,
+        encrypted_body,
+      );
 
       res.sendStatus(200);
       return;
