@@ -57,10 +57,24 @@ export const sendValidation: Schema = {
       errorMessage: "Parent email id must be a valid integer",
     },
   },
-  receiverEmail: {
+  receiverEmails: {
     in: ["body"],
-    isEmail: {
-      errorMessage: "Recevier's email must be a valid email address",
+    isArray: {
+      errorMessage: "Receivers' Emails must be provided as an array",
+    },
+    custom: {
+      options: (value: string[]) => {
+        if (!Array.isArray(value) || value.length === 0) {
+          throw new Error("Receiver emails must be a non-empty array.");
+        }
+        for (const email of value) {
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            // A simple regex for email validation
+            throw new Error(`'${email}' is not a valid email address.`);
+          }
+        }
+        return true;
+      },
     },
   },
   subject: {

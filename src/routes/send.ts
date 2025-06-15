@@ -16,67 +16,88 @@ router.post(
       return;
     }
 
-    const { isReplyTo, receiverEmail, subject, body } = matchedData(req);
-    const { id: senderId, email: senderEmail } = req.user!;
+    const { isReplyTo, receiverEmails, subject, body } = matchedData(req);
+    const { id: currentUserId, email: currentUserEmail } = req.user!;
+
+    const failedEmails: { email: string; error: string }[] = [];
+
+    const addFailedEmail = (email: string, error: string) => {
+      failedEmails.push({ email, error });
+    };
 
     try {
-      const encrypted_subject = encrypt(subject);
-      const encrypted_body = encrypt(body);
+      for (const receiverEmail of receiverEmails) {
+        const encrypted_subject = encrypt(subject);
+        const encrypted_body = encrypt(body);
 
-      if (senderEmail === receiverEmail) {
-        res.status(400).send({ error: "Cannot mail yourself!" });
-        return;
-      }
-
-      const checkReceiverStmt = db.prepare(
-        "SELECT * FROM users WHERE email = ?",
-      );
-      const receiverInfo = checkReceiverStmt.get(receiverEmail);
-
-      if (!receiverInfo) {
-        res.status(404).send({ error: "Invalid Receiver Email" });
-        return;
-      }
-
-      // setting the id in mailInfo to null so that it works without having to provide isReplyTo
-      let mailInfo: { id: number | null } = { id: null };
-
-      // Checking if the mail which the user is trying to reply to exixts only if the user provided isReplyTo
-      // also making sure that parent mail was sent to the currently logged in user
-      if (isReplyTo) {
-        const checkMailExixtenceStmt = db.prepare(
-          "SELECT id FROM mails WHERE id = ? AND receiver_id = ?",
-        );
-        mailInfo = checkMailExixtenceStmt.get(isReplyTo, senderId) as {
-          id: number | null;
-        };
-
-        if (!mailInfo) {
-          res.status(404).send({ error: "Cannot reply to non existent email" });
-          return;
+        if (currentUserEmail === receiverEmail) {
+          addFailedEmail(receiverEmail, "Cannot mail yourself");
+          continue;
         }
+
+        const checkReceiverStmt = db.prepare(
+          "SELECT * FROM users WHERE email = ?",
+        );
+        const receiverInfo = checkReceiverStmt.get(receiverEmail);
+
+        if (!receiverInfo) {
+          addFailedEmail(receiverEmail, "Invalid Receiver Email");
+          continue;
+        }
+
+        const { id: receiverId } = receiverInfo as { id: number };
+
+        // setting the id in mailInfo to null so that it works without having to provide isReplyTo
+        let mailInfo: { id: number | null } = { id: null };
+
+        // Checking if the mail which the user is trying to reply to exixts only if the user provided isReplyTo
+        // check: mail was sent to current user by the email to which the current user is trying to send the mail
+        if (isReplyTo) {
+          const checkMailExixtenceStmt = db.prepare(
+            "SELECT id FROM mails WHERE id = ? AND receiver_id = ? AND sender_id = ?",
+          );
+          mailInfo = checkMailExixtenceStmt.get(
+            isReplyTo,
+            currentUserId,
+            receiverId,
+          ) as {
+            id: number | null;
+          };
+
+          if (!mailInfo) {
+            addFailedEmail(receiverEmail, "Cannot reply to non exixtent email");
+            continue;
+          }
+        }
+
+        const { id: parentId } = mailInfo; // id will be null if isReplyTo was not provided
+
+        const insertStmt = db.prepare(
+          "INSERT INTO mails (is_reply_to, sender_id, receiver_id, subject, body) VALUES (?, ?, ?, ?, ?)",
+        );
+
+        insertStmt.run(
+          parentId,
+          currentUserId,
+          receiverId,
+          encrypted_subject,
+          encrypted_body,
+        );
       }
 
-      const { id: receiverId } = receiverInfo as { id: number };
-      const { id: parentId } = mailInfo; // id will be null if isReplyTo was not provided
-
-      const insertStmt = db.prepare(
-        "INSERT INTO mails (is_reply_to, sender_id, receiver_id, subject, body) VALUES (?, ?, ?, ?, ?)",
-      );
-
-      insertStmt.run(
-        parentId,
-        senderId,
-        receiverId,
-        encrypted_subject,
-        encrypted_body,
-      );
+      if (failedEmails.length > 0) {
+        console.log(failedEmails);
+        res
+          .status(202)
+          .send({ message: "Completed with errors", errors: failedEmails });
+        return;
+      }
 
       res.sendStatus(200);
       return;
     } catch (err) {
-      res.sendStatus(500);
       console.log(err);
+      res.sendStatus(500);
       return;
     }
   },
