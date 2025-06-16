@@ -18,6 +18,7 @@ const handleMails = (req: Request, res: Response, senderReceiver: string) => {
         mails.subject, 
         mails.body, 
         mails.time 
+        ${senderReceiver == "receiver" ? ", mails.read" : ""}
       FROM mails
       JOIN users AS sender ON mails.sender_id = sender.id
       JOIN users AS receiver ON mails.receiver_id = receiver.id
@@ -66,6 +67,10 @@ router.get("/mail/:id", (req: Request, res: Response) => {
   const { id: userId } = req.user!;
 
   try {
+    const userIsReceiver = db
+      .prepare("SELECT receiver_id FROM mails WHERE id = ?")
+      .get(mailId) as { receiver_id: number } | undefined;
+
     const stmt = db.prepare(`
       SELECT 
         mails.id,
@@ -75,6 +80,7 @@ router.get("/mail/:id", (req: Request, res: Response) => {
         mails.subject, 
         mails.body, 
         mails.time 
+        ${userIsReceiver?.receiver_id === userId ? ", mails.read" : ""}
       FROM mails
       JOIN users AS sender ON mails.sender_id = sender.id
       JOIN users AS receiver ON mails.receiver_id = receiver.id
@@ -106,7 +112,7 @@ router.get("/mail/:id", (req: Request, res: Response) => {
       body: decryptedBody,
     };
 
-    db.prepare("UPDATE mails SET read = 1 WHERE id = ?").run(mailId)
+    db.prepare("UPDATE mails SET read = 1 WHERE id = ?").run(mailId);
 
     res.status(200).send(decryptedRequestedMail);
     return;
