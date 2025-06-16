@@ -19,10 +19,15 @@ router.post(
     const { isReplyTo, receiverEmails, subject, body } = matchedData(req);
     const { id: currentUserId, email: currentUserEmail } = req.user!;
 
-    const failedEmails: { email: string; error: string }[] = [];
+    const failedEmails: { email: string; statusCode: number; error: string }[] =
+      [];
 
-    const addFailedEmail = (email: string, error: string) => {
-      failedEmails.push({ email, error });
+    const addFailedEmail = (
+      email: string,
+      statusCode: number,
+      error: string,
+    ) => {
+      failedEmails.push({ email, statusCode, error });
     };
 
     try {
@@ -31,7 +36,7 @@ router.post(
         const encrypted_body = encrypt(body);
 
         if (currentUserEmail === receiverEmail) {
-          addFailedEmail(receiverEmail, "Cannot mail yourself");
+          addFailedEmail(receiverEmail, 400, "Cannot mail yourself");
           continue;
         }
 
@@ -41,7 +46,7 @@ router.post(
         const receiverInfo = checkReceiverStmt.get(receiverEmail);
 
         if (!receiverInfo) {
-          addFailedEmail(receiverEmail, "Invalid Receiver Email");
+          addFailedEmail(receiverEmail, 404, "Receiver Email Not Found");
           continue;
         }
 
@@ -65,7 +70,11 @@ router.post(
           };
 
           if (!mailInfo) {
-            addFailedEmail(receiverEmail, "Cannot reply to non exixtent email");
+            addFailedEmail(
+              receiverEmail,
+              404,
+              "Cannot reply to non exixtent email",
+            );
             continue;
           }
         }
@@ -85,8 +94,25 @@ router.post(
         );
       }
 
+      // check for errors
       if (failedEmails.length > 0) {
         console.log(failedEmails);
+
+        // if only one error, show the whole response as an error
+        if (failedEmails.length === 1) {
+          const { statusCode, error } = failedEmails[0];
+          res.status(statusCode).send({ error: error });
+          return;
+        }
+
+        if (failedEmails.length === receiverEmails.length) {
+          res
+            .status(400)
+            .send({ message: "No emails sent!", errors: failedEmails });
+          return;
+        }
+
+        // multiple errors will show competed with errors
         res
           .status(202)
           .send({ message: "Completed with errors", errors: failedEmails });
