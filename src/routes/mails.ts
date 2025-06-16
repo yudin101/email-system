@@ -5,7 +5,7 @@ import { Mail } from "../types/mail";
 
 const router = Router();
 
-const handleMails = (req: Request, res: Response, senderReceiverId: string) => {
+const handleMails = (req: Request, res: Response, senderReceiver: string) => {
   const { id: receiverId } = req.user!;
 
   try {
@@ -21,7 +21,8 @@ const handleMails = (req: Request, res: Response, senderReceiverId: string) => {
       FROM mails
       JOIN users AS sender ON mails.sender_id = sender.id
       JOIN users AS receiver ON mails.receiver_id = receiver.id
-      WHERE mails.${senderReceiverId} = ?
+      WHERE mails.${senderReceiver}_id = ?
+      AND mails.${senderReceiver}_deleted = 0
     `);
 
     const mails = stmt.all(receiverId) as Mail[];
@@ -53,11 +54,11 @@ const handleMails = (req: Request, res: Response, senderReceiverId: string) => {
 };
 
 router.get("/received", (req: Request, res: Response) => {
-  handleMails(req, res, "receiver_id");
+  handleMails(req, res, "receiver");
 });
 
 router.get("/sent", (req: Request, res: Response) => {
-  handleMails(req, res, "sender_id");
+  handleMails(req, res, "sender");
 });
 
 router.get("/mail/:id", (req: Request, res: Response) => {
@@ -77,9 +78,24 @@ router.get("/mail/:id", (req: Request, res: Response) => {
       FROM mails
       JOIN users AS sender ON mails.sender_id = sender.id
       JOIN users AS receiver ON mails.receiver_id = receiver.id
-      WHERE mails.id = ? AND (receiver_id = ? OR sender_id = ?)
+      WHERE mails.id = ? 
+      AND (
+        (
+          receiver_id = ? 
+          AND receiver_deleted = 0
+        ) 
+      OR (
+          sender_id = ? 
+          AND sender_deleted = 0
+        )
+      )
     `);
-    const requestedMail = stmt.get(mailId, userId, userId) as Mail;
+    const requestedMail = stmt.get(mailId, userId, userId) as Mail | undefined;
+
+    if (!requestedMail) {
+      res.sendStatus(404);
+      return;
+    }
 
     const decryptedSubject = decrypt(requestedMail.subject);
     const decryptedBody = decrypt(requestedMail.body);

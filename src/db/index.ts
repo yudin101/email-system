@@ -25,6 +25,8 @@ db.exec(`
     subject TEXT,
     body TEXT NOT NULL,
     time NUMERIC DEFAULT CURRENT_TIMESTAMP,
+    sender_deleted INTEGER DEFAULT 0 CHECK (sender_deleted IN (0, 1)),
+    receiver_deleted INTEGER DEFAULT 0 CHECK (receiver_deleted IN (0,1)),
     PRIMARY KEY(id),
     FOREIGN KEY (is_reply_to) REFERENCES mails (id),
     FOREIGN KEY (sender_id) REFERENCES users (id),
