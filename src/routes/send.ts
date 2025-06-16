@@ -98,14 +98,15 @@ router.post(
       if (failedEmails.length > 0) {
         console.log(failedEmails);
 
-        // if only one error, show the whole response as an error
-        if (failedEmails.length === 1) {
-          const { statusCode, error } = failedEmails[0];
-          res.status(statusCode).send({ error: error });
-          return;
-        }
-
         if (failedEmails.length === receiverEmails.length) {
+
+          // if only one error, show the whole response as an error
+          if (failedEmails.length === 1) {
+            const { statusCode, error } = failedEmails[0];
+            res.status(statusCode).send({ error: error });
+            return;
+          }
+
           res
             .status(400)
             .send({ message: "No emails sent!", errors: failedEmails });
