@@ -106,6 +106,8 @@ router.get("/mail/:id", (req: Request, res: Response) => {
       body: decryptedBody,
     };
 
+    db.prepare("UPDATE mails SET read = 1 WHERE id = ?").run(mailId)
+
     res.status(200).send(decryptedRequestedMail);
     return;
   } catch (err) {

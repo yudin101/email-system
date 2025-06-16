@@ -25,6 +25,7 @@ db.exec(`
     subject TEXT,
     body TEXT NOT NULL,
     time NUMERIC DEFAULT CURRENT_TIMESTAMP,
+    read INTEGER DEFAULT 0 CHECK (read IN (0, 1)),
     sender_deleted INTEGER DEFAULT 0 CHECK (sender_deleted IN (0, 1)),
     receiver_deleted INTEGER DEFAULT 0 CHECK (receiver_deleted IN (0,1)),
     PRIMARY KEY(id),
