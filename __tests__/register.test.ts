@@ -30,7 +30,7 @@ describe("POST /api/register", () => {
     }
   });
 
-  test("201 on sucessful registration", async () => {
+  test("201 on successful registration", async () => {
     const res = await request(app).post("/api/register").send({
       username: TEST_USERNAME,
       email: TEST_EMAIL,

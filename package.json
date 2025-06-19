@@ -22,7 +22,8 @@
     "express-session": "^1.18.1",
     "express-validator": "^7.2.1",
     "passport": "^0.7.0",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "superagent": "^6.1.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -34,9 +35,9 @@
     "@types/node": "^22.15.32",
     "@types/passport": "^1.0.17",
     "@types/passport-local": "^1.0.38",
-    "@types/supertest": "^6.0.3",
+    "@types/supertest": "^2.0.12",
     "jest": "^30.0.0",
-    "supertest": "^7.1.1",
+    "supertest": "^6.3.3",
     "ts-jest": "^29.4.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
