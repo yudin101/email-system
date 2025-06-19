@@ -49,7 +49,7 @@ router.post(
       return;
     } catch (err) {
       res.sendStatus(500);
-      console.log(err);
+      console.error(err);
       return;
     }
   },

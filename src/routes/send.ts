@@ -96,7 +96,7 @@ router.post(
 
       // check for errors
       if (failedEmails.length > 0) {
-        console.log(failedEmails);
+        console.error(failedEmails);
 
         if (failedEmails.length === receiverEmails.length) {
 
@@ -123,7 +123,7 @@ router.post(
       res.sendStatus(200);
       return;
     } catch (err) {
-      console.log(err);
+      console.error(err);
       res.sendStatus(500);
       return;
     }

@@ -8,7 +8,8 @@ router.delete("/delete/:id", (req: Request, res: Response) => {
   const { id: currentUserId } = req.user!;
 
   try {
-    const getMailQuery = `SELECT 
+    const getMailQuery = `
+      SELECT 
         receiver_id, 
         sender_id, 
         receiver_deleted, 
@@ -72,7 +73,7 @@ router.delete("/delete/:id", (req: Request, res: Response) => {
     res.sendStatus(200);
     return;
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.sendStatus(500);
     return;
   }

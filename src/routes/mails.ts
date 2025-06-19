@@ -39,7 +39,7 @@ const handleMails = (req: Request, res: Response, senderReceiver: string) => {
           body: decryptedBody,
         } as Mail;
       } catch (err) {
-        console.log(err);
+        console.error(err);
         res.sendStatus(500);
         return;
       }
@@ -49,7 +49,7 @@ const handleMails = (req: Request, res: Response, senderReceiver: string) => {
     return;
   } catch (err) {
     res.sendStatus(500);
-    console.log(err);
+    console.error(err);
     return;
   }
 };
@@ -118,7 +118,7 @@ router.get("/mail/:id", (req: Request, res: Response) => {
     return;
   } catch (err) {
     res.sendStatus(500);
-    console.log(err);
+    console.error(err);
     return;
   }
 });
